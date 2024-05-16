@@ -86,14 +86,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
         }
         else {
-            if (line < 10 && pos < 99) {
+            if (line < 9 && pos == 99) {
+                line++;
+                pos = 0;
+            }
+
+            if (line <= 9 && pos < 99) {
                 str[line][pos++] = wParam;
                 str[line][pos] = NULL;
-
-                if (line < 9 && pos == 99) {
-                    line++;
-                    pos = 0;
-                }
             }
         }
 
