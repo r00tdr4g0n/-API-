@@ -57,7 +57,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     switch (message) {
     case WM_CREATE:
-        pen = CreatePen(PS_SOLID, 1, RGB(0xff, 0xff, 00));
+        pen = CreatePen(PS_SOLID, 1, RGB(0xff, 0xff, 0x00));
         brush = CreateSolidBrush(RGB(0xff, 0x66, 0xff));
         break;
     case WM_PAINT:
@@ -74,6 +74,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         EndPaint(hWnd, &ps);
         break;
     case WM_DESTROY:
+        DeleteObject(oldPen);
+        DeleteObject(oldBrush);
         PostQuitMessage(0);
         break;
     }
