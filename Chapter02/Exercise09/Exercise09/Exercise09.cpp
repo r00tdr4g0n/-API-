@@ -82,8 +82,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     Ellipse(hdc, drawRect.left, drawRect.top, drawRect.right, drawRect.bottom);
                     break;
                 case 1:
-                    LineTo(hdc, drawRect.left, drawRect.top);
-                    MoveToEx(hdc, drawRect.right, drawRect.bottom, NULL);
+                    MoveToEx(hdc, drawRect.left, drawRect.top, NULL);
+                    LineTo(hdc, drawRect.right, drawRect.bottom);
                     break;
                 case 2:
                     Rectangle(hdc, drawRect.left, drawRect.top, drawRect.right, drawRect.bottom);
