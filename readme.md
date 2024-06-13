@@ -26,3 +26,4 @@
 - **[Chapter03 - Exercise07](/Chapter03/Exercise07/)**
 - **[Chapter03 - Exercise08](/Chapter03/Exercise08/)**
 - **[Chapter03 - Exercise09](/Chapter03/Exercise09/)**
+- **[Chapter03 - Exercise10](/Chapter03/Exercise10/)**
