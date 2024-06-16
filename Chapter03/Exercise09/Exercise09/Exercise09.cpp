@@ -16,6 +16,7 @@ typedef struct OBS {
     int x;
     int y;
     int r;
+    int crash;
 } OBS;
 
 int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
@@ -83,19 +84,41 @@ bool CheckObs(OBS* obs, OBS pos, int cnt)
     return true;
 }
 
+void CheckCrash(OBS& obs, OBS& player)
+{
+    int d1 = (obs.x - player.x) * (obs.x - player.x);
+    int d2 = (obs.y - player.y) * (obs.y - player.y);
+
+    if ((int)sqrt(d1 + d2) < (obs.r + player.r)) {
+        obs.crash = 1;
+    }
+}
+
+void CheckCrash(OBS* obs, OBS& player)
+{
+    for (int i = 0; i < OBS_CNT; i++) {
+        CheckCrash(obs[i], player);
+    }
+}
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     HDC hdc;
     PAINTSTRUCT ps;
     static OBS obs[OBS_CNT] = { 0, };
+    static OBS player = { 0, };
     static HBRUSH green, red, old;
+    static bool clicked;
+    static bool gameover;
+    static RECT r = { 0, };
 
     switch (message) {
     case WM_CREATE:
     {
-        RECT r = { 0, };
         green = CreateSolidBrush(RGB(0, 255, 0));
         red = CreateSolidBrush(RGB(255, 0, 0));
+        clicked = false;
+        gameover = false;
 
         srand((UINT)time(NULL));
         GetClientRect(hWnd, &r);
@@ -103,12 +126,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         int w = r.right - r.left;
         int h = r.bottom - r.top;
 
-        obs[0] = { rand() % w, rand() % h, (rand() % MAX_RAD) + MIN_RAD };
-        OBS pos = { 0, };
-        for (int i = 1; i < OBS_CNT; i++) {
-            pos = { rand() % w, rand() % h , (rand() % MAX_RAD) + MIN_RAD };
+        player = { 0, 0, 50, -1 };
 
-            if (CheckObs(obs, pos, i)) {
+        OBS pos = { 0, };
+        for (int i = 0; i < OBS_CNT; i++) {
+            pos = { rand() % w, rand() % h , (rand() % MAX_RAD) + MIN_RAD, 0 };
+
+            if (CheckDistance(player, pos) && CheckObs(obs, pos, i)) {
                 obs[i] = pos;
             }
             else {
@@ -120,17 +144,66 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_PAINT:
         hdc = BeginPaint(hWnd, &ps);
 
-        old = (HBRUSH)SelectObject(hdc, green);
-
         for (int i = 0; i < OBS_CNT; i++) {
+            if (obs[i].crash) 
+                old = (HBRUSH)SelectObject(hdc, red);
+            else 
+                old = (HBRUSH)SelectObject(hdc, green);
+
             Ellipse(hdc, 
                 obs[i].x - obs[i].r, obs[i].y - obs[i].r, 
                 obs[i].x + obs[i].r, obs[i].y + obs[i].r);
+            SelectObject(hdc, old);
         }
 
-        SelectObject(hdc, old);
+        SelectObject(hdc, GetStockObject(BLACK_BRUSH));
+        Ellipse(hdc, player.x - player.r, player.y - player.r, player.x + player.r, player.y + player.r);
+
+        if (gameover) {
+            int crashCnt = 0;
+            WCHAR str[128] = { 0, };
+
+            for (int i = 0; i < OBS_CNT; i++) {
+                if (obs[i].crash == 1) crashCnt++;
+            }
+
+            swprintf_s(str, L"충돌한 공의 개수는 %d입니다.", crashCnt);
+
+            SIZE size;
+            GetTextExtentPoint(hdc, str, wcslen(str), &size);
+            TextOut(hdc, r.right / 2 - size.cx / 2, r.bottom /2 - size.cy / 2, str, wcslen(str));
+        }
 
         EndPaint(hWnd, &ps);
+
+        break;
+    case WM_LBUTTONDOWN:
+        clicked = true;
+        SetCapture(hWnd);
+        break;
+    case WM_LBUTTONUP:
+        clicked = false;
+        ReleaseCapture();
+        break;
+    case WM_MOUSEMOVE:
+        if (clicked) {
+            player.x = LOWORD(lParam) << 16 >> 16;
+            player.y = HIWORD(lParam) << 16 >> 16;
+
+            if (player.x < 0) player.x = 0;
+            if (player.y < 0) player.y = 0;
+            if (player.x > r.right) player.x = r.right;
+            if (player.y > r.bottom) player.y = r.bottom;
+
+            if (player.x == r.right && player.y == r.bottom) {
+                clicked = false;
+                gameover = true;
+            }
+
+            CheckCrash(obs, player);
+
+            InvalidateRgn(hWnd, NULL, TRUE);
+        }
 
         break;
     case WM_DESTROY:
