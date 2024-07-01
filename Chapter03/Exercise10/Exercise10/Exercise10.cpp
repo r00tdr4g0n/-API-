@@ -13,6 +13,13 @@ LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 WCHAR szWindowClass[] = L"WindowClass Name";
 WCHAR szTitle[] = L"Window Title Name";
 
+enum DIR {
+    LEFT = 0,
+    UP,
+    RIGHT,
+    DOWN
+};
+
 typedef struct POS {
     int x;
     int y;
@@ -58,6 +65,24 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
     }
 
     return (int)msg.wParam;
+}
+
+bool CheckFruit(POS a_pos, POS* a_fruit, UINT* a_cnt)
+{
+    for (int i = 0; i < *a_cnt; i++) {
+        if (a_pos.x == a_fruit[i].x && a_pos.y == a_fruit[i].y) {
+            *a_cnt -= 1;
+
+            for (int j = i; j < *a_cnt; j++) {
+                a_fruit[j].x = a_fruit[j + 1].x;
+                a_fruit[j].y = a_fruit[j + 1].y;
+            }
+
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void DrawMap(HDC a_hdc)
@@ -128,10 +153,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     static POS snake[MAX_SNAKE_LEN];
     static UINT uiLen;
     static bool bStart;
+    static UINT uiDir;
+    static UINT uiFruitCnt = FRUIT_CNT;
 
     switch (message) {
     case WM_CREATE:
         bStart = false;
+        uiDir = RIGHT;
 
         x = 20;
         y = 20;
@@ -161,7 +189,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         hdc = BeginPaint(hWnd, &ps);
 
         DrawMap(hdc);
-        DrawFruit(hdc, fruit, FRUIT_CNT);
+        DrawFruit(hdc, fruit, uiFruitCnt);
         DrawSnake(hdc, snake, uiLen);
 
         EndPaint(hWnd, &ps);
@@ -172,13 +200,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case VK_RETURN:
             if (!bStart) {
                 bStart = true;
-                SetTimer(hWnd, 1, 500, NULL);
+                SetTimer(hWnd, 1, 200, NULL);
             }
             else {
                 bStart = false;
                 KillTimer(hWnd, 1);
             }
 
+            break;
+        case VK_LEFT:
+            if (uiDir != RIGHT) uiDir = LEFT;
+            break;
+        case VK_UP:
+            if (uiDir != DOWN) uiDir = UP;
+            break;
+        case VK_RIGHT:
+            if (uiDir != LEFT) uiDir = RIGHT;
+            break;
+        case VK_DOWN:
+            if (uiDir != UP) uiDir = DOWN;
             break;
         default:
             break;
@@ -187,12 +227,33 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     case WM_TIMER:
         if (bStart) {
+            POS tmp = snake[uiLen - 1];
+            
             for (int i = 0; i < uiLen - 1; i++) {
                 snake[uiLen - 1 - i].x = snake[uiLen - 2 - i].x;
                 snake[uiLen - 1 - i].y = snake[uiLen - 2 - i].y;
             }
 
-            snake[0].x++;
+            switch (uiDir) {
+            case LEFT:
+                snake[0].x--;
+                break;
+            case UP:
+                snake[0].y--;
+                break;
+            case RIGHT:
+                snake[0].x++;
+                break;
+            case DOWN:
+                snake[0].y++;
+                break;
+            }
+
+            if (CheckFruit(snake[0], fruit, &uiFruitCnt)) {
+                snake[uiLen].x = tmp.x;
+                snake[uiLen].y = tmp.y;
+                uiLen++;
+            }
 
             InvalidateRgn(hWnd, NULL, TRUE);
         }
