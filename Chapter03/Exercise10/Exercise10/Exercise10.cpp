@@ -67,6 +67,23 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
     return (int)msg.wParam;
 }
 
+bool CheckCrash(POS *a_snake, UINT a_len)
+{
+    if (a_snake[0].x <= 0 ||
+        a_snake[0].x >= MAP_X_SIZE - 1 ||
+        a_snake[0].y <= 0 ||
+        a_snake[0].y >= MAP_Y_SIZE - 1) {
+        return true;
+    }
+
+    for (int i = 1; i < a_len; i++) {
+        if (a_snake[0].x == a_snake[i].x && a_snake[0].y == a_snake[i].y)
+            return true;
+    }
+
+    return false;
+}
+
 bool CheckFruit(POS a_pos, POS* a_fruit, UINT* a_cnt)
 {
     for (int i = 0; i < *a_cnt; i++) {
@@ -153,12 +170,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     static POS snake[MAX_SNAKE_LEN];
     static UINT uiLen;
     static bool bStart;
+    static bool bGameOver;
     static UINT uiDir;
     static UINT uiFruitCnt = FRUIT_CNT;
 
     switch (message) {
     case WM_CREATE:
         bStart = false;
+        bGameOver = false;
         uiDir = RIGHT;
 
         x = 20;
@@ -192,9 +211,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         DrawFruit(hdc, fruit, uiFruitCnt);
         DrawSnake(hdc, snake, uiLen);
 
+        if (uiFruitCnt == 0) {
+            KillTimer(hWnd, 1);
+            MessageBox(NULL, L"Clear !!!", L"Exercise10", MB_OK);
+        }
+
         EndPaint(hWnd, &ps);
         break;
     case WM_KEYDOWN:
+        if (bGameOver)
+            break;
+
         switch (wParam)
         {
         case VK_RETURN:
@@ -223,6 +250,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         default:
             break;
         }
+
         InvalidateRgn(hWnd, NULL, TRUE);
         break;
     case WM_TIMER:
@@ -246,6 +274,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 break;
             case DOWN:
                 snake[0].y++;
+                break;
+            }
+
+            if (CheckCrash(snake, uiLen)) {
+                KillTimer(hWnd, 1);
+                bGameOver = true;
+                bStart = false;
+                MessageBox(NULL, L"Game over !!!", L"Exercise10", MB_OK);
                 break;
             }
 
