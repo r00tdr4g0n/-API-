@@ -59,6 +59,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     HDC hdc;
     PAINTSTRUCT ps;
+    static BYTE circles[ROW][COL] = { 0, };
+    int x, y;
 
     switch (message) {
     case WM_CREATE:
@@ -73,10 +75,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     SY + i * H, 
                     SX + j * W + W + 1, 
                     SY + i * H + H + 1);
+
+                if (circles[i][j]) {
+                    Ellipse(hdc, 
+                        SX + j * W + 1,
+                        SY + i * H + 1,
+                        SX + j * W + W,
+                        SY + i * H + H);
+                }
             }
         }
 
         EndPaint(hWnd, &ps);
+
+        break;
+    case WM_LBUTTONDOWN:
+        x = lParam & 0x0000ffff;
+        y = (lParam & 0xffff0000) >> 16;
+
+        circles[y / H % ROW][x / W % COL] = 1;
+
+        InvalidateRgn(hWnd, NULL, FALSE);
 
         break;
     case WM_DESTROY:
