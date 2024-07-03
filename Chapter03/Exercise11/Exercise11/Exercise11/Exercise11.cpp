@@ -93,7 +93,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         x = lParam & 0x0000ffff;
         y = (lParam & 0xffff0000) >> 16;
 
-        circles[y / H % ROW][x / W % COL] = 1;
+        if (x < W * COL && y < H * ROW) {
+            circles[y / H % ROW][x / W % COL] = 1;
+        }
 
         InvalidateRgn(hWnd, NULL, FALSE);
 
